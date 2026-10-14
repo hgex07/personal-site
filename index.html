@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en" data-fx="mesh vignette rules hover">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Héctor — home</title>
+  <meta name="description" content="Personal page of Héctor, biochemistry student.">
+  <link rel="stylesheet" href="style.css">
+  <script>try{var p=localStorage.getItem("palette");if(p)document.documentElement.setAttribute("data-palette",p);var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+  <script>document.documentElement.setAttribute("data-route",/^#\/?works/.test(location.hash)?"works":"home")</script>
+</head>
+<body>
+  <div class="bg bg-mesh" aria-hidden="true"></div>
+  <div class="bg bg-vignette" aria-hidden="true"></div>
+  <div class="bg bg-rules" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"></div>
+  <main>
+    <header>
+      <p class="site-title">HGE's own web corner</p>
+      <nav>
+        <a href="#/home" data-route="home" aria-current="page">home</a>
+        <a href="#/works" data-route="works">works</a>
+        <span class="controls">
+          <span class="palette" role="group" aria-label="accent colour">
+            <button class="swatch sw-olive" data-palette="olive" title="olive" aria-label="olive accent"></button>
+            <button class="swatch sw-slate" data-palette="slate" title="slate" aria-label="slate accent"></button>
+            <button class="swatch sw-clay" data-palette="clay" title="clay" aria-label="clay accent"></button>
+            <button class="swatch sw-graphite" data-palette="graphite" title="graphite" aria-label="graphite accent"></button>
+          </span>
+          <button id="theme-toggle" class="theme-toggle" title="switch theme">☾ dark</button>
+        </span>
+      </nav>
+    </header>
+
+    <section class="view" data-view="home">
+    <section class="hero">
+      <p class="label">biochemistry student</p>
+      <h1>Héctor</h1>
+      <p class="lead">
+       Just a second-year biochem student at <a href="https://www.uv.es">UV</a> who's also a computer nerd and open source software lover.
+      </p>
+    </section>
+
+    <h2>Interests</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Cell biology</h3>
+        <p class="muted">Specially immunology</p>
+      </div>
+      <div class="card">
+        <h3>Lab work</h3>
+        <p class="muted">Not reports, though.</p>
+      </div>
+      <div class="card">
+        <h3>Tinkering</h3>
+        <p class="muted">Open source software, LLMs, 3D-printing...</p>
+      </div>
+      <div class="card">
+        <h3>Ranting</h3>
+        <p class="muted">In the future I'll probably post short rants around here'.</p>
+      </div>
+    </div>
+
+    <h2>Latest work</h2>
+    <!-- latest:start -->
+    <ul class="works">
+      <li>
+        <a class="title" href="works/melanophores-aggregation.html">Experimenting with melanophore agreggation and dispersion</a>
+        <span class="meta">2025-09-14</span>
+        <p class="summary">More to come.</p>
+      </li>
+    </ul>
+    <!-- latest:end -->
+    <p><a class="more-link" href="#/works">all works →</a></p>
+
+    <h2>Contact</h2>
+    <p>
+      <a href="mailto:hecgies@alumni.uv.es">hecgies@alumni.uv.es</a> &nbsp; •  &nbsp; <i>Feel free to send me papers or whatever</i>
+    </p>
+    </section>
+
+    <section class="view" data-view="works">
+    <h1>Works</h1>
+    <p class="muted">Notes, write-ups and projects. Newest first.</p>
+
+    <!-- works:start -->
+    <ul class="works">
+      <li>
+        <a class="title" href="works/melanophores-aggregation.html">Experimenting with melanophore agreggation and dispersion</a>
+        <span class="meta">2025-09-14</span>
+        <p class="summary">More to come.</p>
+      </li>
+    </ul>
+    <!-- works:end -->
+    </section>
+  </main>
+
+  <footer>
+    Too busy studying to put trackers here
+  </footer>
+  <script>
+    /* hash routing: home and works are separate views inside this one file */
+    (function () {
+      var root = document.documentElement;
+      var views = document.querySelectorAll(".view[data-view]");
+      var links = document.querySelectorAll("nav a[data-route]");
+      var titles = { home: "Héctor — home", works: "works — HGE" };
+      function route() {
+        var name = /^#\/?works/.test(location.hash) ? "works" : "home";
+        root.setAttribute("data-route", name);
+        views.forEach(function (v) { v.hidden = v.dataset.view !== name; });
+        links.forEach(function (a) {
+          if (a.dataset.route === name) a.setAttribute("aria-current", "page");
+          else a.removeAttribute("aria-current");
+        });
+        document.title = titles[name] || titles.home;
+      }
+      window.addEventListener("hashchange", function () { route(); window.scrollTo(0, 0); });
+      route();
+    })();
+  </script>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var buttons = document.querySelectorAll(".swatch");
+      function mark() {
+        var current = root.getAttribute("data-palette") || "olive";
+        buttons.forEach(function (b) {
+          b.setAttribute("aria-pressed", String(b.dataset.palette === current));
+        });
+      }
+      buttons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          root.setAttribute("data-palette", b.dataset.palette);
+          try { localStorage.setItem("palette", b.dataset.palette); } catch (e) {}
+          mark();
+        });
+      });
+      mark();
+
+      var toggle = document.getElementById("theme-toggle");
+      function isDark() { return root.getAttribute("data-theme") === "dark"; }
+      function paint() { toggle.textContent = isDark() ? "☀ light" : "☾ dark"; }
+      toggle.addEventListener("click", function () {
+        var next = isDark() ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("theme", next); } catch (e) {}
+        paint();
+      });
+      paint();
+    })();
+  </script>
+</body>
+</html>

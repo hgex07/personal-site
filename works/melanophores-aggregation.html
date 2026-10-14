@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" data-fx="mesh vignette rules hover">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Experimenting with melanophore agreggation and dispersion — Héctor</title>
+  <meta name="description" content="More to come.">
+  <link rel="stylesheet" href="../style.css">
+  <script>try{var p=localStorage.getItem("palette");if(p)document.documentElement.setAttribute("data-palette",p);var t=localStorage.getItem("theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head>
+<body>
+  <div class="bg bg-mesh" aria-hidden="true"></div>
+  <div class="bg bg-vignette" aria-hidden="true"></div>
+  <div class="bg bg-rules" aria-hidden="true"></div>
+  <div class="progress" aria-hidden="true"></div>
+  <main>
+    <header>
+      <p class="site-title">HGE's own web corner</p>
+      <nav>
+        <a href="../index.html#/home">home</a>
+        <a href="../index.html#/works">works</a>
+        <span class="controls">
+          <span class="palette" role="group" aria-label="accent colour">
+            <button class="swatch sw-olive" data-palette="olive" title="olive" aria-label="olive accent"></button>
+            <button class="swatch sw-slate" data-palette="slate" title="slate" aria-label="slate accent"></button>
+            <button class="swatch sw-clay" data-palette="clay" title="clay" aria-label="clay accent"></button>
+            <button class="swatch sw-graphite" data-palette="graphite" title="graphite" aria-label="graphite accent"></button>
+          </span>
+          <button id="theme-toggle" class="theme-toggle" title="switch theme">☾ dark</button>
+        </span>
+      </nav>
+    </header>
+
+    <article class="post">
+      <header>
+        <h1>Experimenting with melanophore agreggation and dispersion</h1>
+        <p class="meta muted">2025-09-14</p>
+      </header>
+<h2>Work in progress, please wait a bit more</h2>
+      <a class="backlink" href="../index.html#/works">← back to works</a>
+    </article>
+
+  </main>
+
+  <footer>
+    Too busy studying to put trackers here
+  </footer>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var buttons = document.querySelectorAll(".swatch");
+      function mark() {
+        var current = root.getAttribute("data-palette") || "olive";
+        buttons.forEach(function (b) {
+          b.setAttribute("aria-pressed", String(b.dataset.palette === current));
+        });
+      }
+      buttons.forEach(function (b) {
+        b.addEventListener("click", function () {
+          root.setAttribute("data-palette", b.dataset.palette);
+          try { localStorage.setItem("palette", b.dataset.palette); } catch (e) {}
+          mark();
+        });
+      });
+      mark();
+
+      var toggle = document.getElementById("theme-toggle");
+      function isDark() { return root.getAttribute("data-theme") === "dark"; }
+      function paint() { toggle.textContent = isDark() ? "☀ light" : "☾ dark"; }
+      toggle.addEventListener("click", function () {
+        var next = isDark() ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        try { localStorage.setItem("theme", next); } catch (e) {}
+        paint();
+      });
+      paint();
+    })();
+  </script>
+</body>
+</html>

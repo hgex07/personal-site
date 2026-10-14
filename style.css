@@ -1,0 +1,612 @@
+/* héctor — shared styles */
+
+/* self-hosted Newsreader (latin subset) — https://fontsource.org / bunny fonts, OFL */
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/newsreader-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/newsreader-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/newsreader-latin-400-italic.woff2") format("woff2");
+}
+
+:root {
+  --bg: #f2f0e9;
+  --fg: #24241f;
+  --muted: #75736a;
+  --line: #dfdccf;
+  --accent: #4a5d4e; /* muted olive, barely there */
+  --noise: 0.045;
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+}
+
+/* dark theme — opt-in via the nav toggle (data-theme on <html>); light is the default */
+:root[data-theme="dark"] {
+  --bg: #262622;
+  --fg: #e3e0d7;
+  --muted: #a5a296;
+  --line: #42423b;
+  --accent: #a8b5a3;
+  --noise: 0.05;
+}
+
+/* --- accent palettes (chosen via the swatches, stored in localStorage) --- */
+
+:root[data-palette="slate"] {
+  --accent: #4c5f72;
+}
+
+:root[data-palette="clay"] {
+  --accent: #8a5a44;
+}
+
+:root[data-palette="graphite"] {
+  --accent: #565652;
+}
+
+:root[data-theme="dark"][data-palette="slate"] {
+  --accent: #9db0c4;
+}
+
+:root[data-theme="dark"][data-palette="clay"] {
+  --accent: #c69a80;
+}
+
+:root[data-theme="dark"][data-palette="graphite"] {
+  --accent: #b3b3ad;
+}
+
+/* page-to-page cross-fade (supported browsers; no-op elsewhere) */
+@view-transition {
+  navigation: auto;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 19px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-serif);
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* paper grain — inline svg noise, no external image, no js */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--noise);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* scroll progress line — css scroll-driven, hidden where unsupported */
+
+@supports (animation-timeline: scroll()) {
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    animation: progress-grow linear both;
+    animation-timeline: scroll(root block);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  @keyframes progress-grow {
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+main {
+  position: relative;
+  z-index: 0;
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 2rem;
+}
+
+/* header / nav — monospace, lowercase, roomy */
+
+header {
+  margin-bottom: 2.5rem;
+}
+
+.site-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: var(--muted);
+  margin: 0 0 0.9rem;
+}
+
+nav {
+  display: flex;
+  gap: 1.75rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem;
+}
+
+nav a {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 0.2rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.8rem; /* sit the underline on the nav rule */
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+nav a:hover {
+  color: var(--fg);
+  border-bottom-color: var(--muted);
+}
+
+nav a[aria-current="page"] {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+/* palette swatches + theme toggle */
+
+.controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+}
+
+.palette {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.theme-toggle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--fg);
+  border-color: var(--muted);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swatch {
+  width: 0.72rem;
+  height: 0.72rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--sw);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.2);
+}
+
+.swatch[aria-pressed="true"] {
+  border-color: var(--fg);
+  transform: scale(1.2);
+}
+
+.swatch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sw-olive { --sw: #4a5d4e; }
+.sw-slate { --sw: #4c5f72; }
+.sw-clay { --sw: #8a5a44; }
+.sw-graphite { --sw: #565652; }
+
+/* typography */
+
+h1 {
+  font-size: 1.7rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 0 0 1rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--accent);
+  margin: 2.2rem 0 0.6rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--accent);
+  margin: 1.6rem 0 0.4rem;
+}
+
+p {
+  margin: 0 0 1.1rem;
+}
+
+a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+a:hover {
+  text-decoration-color: var(--accent);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+}
+
+pre {
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+  padding: 0.9rem 1.1rem;
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
+blockquote {
+  margin: 1.2rem 0;
+  padding-left: 1.1rem;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* works index */
+
+ul.works {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+
+ul.works li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+ul.works li:first-child {
+  border-top: 1px solid var(--line);
+}
+
+ul.works a.title {
+  display: block;
+  font-size: 1.15rem;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+ul.works a.title:hover {
+  color: var(--accent);
+  text-decoration: none;
+  transform: translateX(4px);
+}
+
+ul.works .meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
+}
+
+ul.works .summary {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0.35rem 0 0;
+}
+
+/* single post page */
+
+article.post header {
+  margin-bottom: 1.5rem;
+}
+
+article.post h1 {
+  margin-bottom: 0.3rem;
+}
+
+article.post .meta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.backlink {
+  display: inline-block;
+  margin-top: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.backlink:hover {
+  color: var(--accent);
+}
+
+/* scroll reveals — css view-driven, static where unsupported */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    ul.works li,
+    article.post > * {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 75%;
+    }
+
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- background layers -------------------------------------------------
+   toggle from <html data-fx="mesh vignette rules hover">; remove a word
+   to switch that layer off. all static, pointer-events: none, z-index: -1.
+----------------------------------------------------------------------- */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* soft vignette: lighter at the top, corners barely pulled in */
+:root[data-fx~="vignette"] .bg-vignette {
+  background: radial-gradient(
+    130% 110% at 50% -5%,
+    transparent 50%,
+    color-mix(in srgb, var(--fg) 5%, transparent) 100%
+  );
+}
+
+/* modern: accent-tinted mesh glow, very low contrast, slow drift */
+:root[data-fx~="mesh"] .bg-mesh {
+  background:
+    radial-gradient(42rem 30rem at 12% 8%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(38rem 28rem at 88% 85%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%);
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-fx~="mesh"] .bg-mesh {
+    animation: mesh-drift 70s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes mesh-drift {
+  from {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, 1%, 0) scale(1.06);
+  }
+}
+
+/* hairline rules flanking the content column, faded at both ends */
+:root[data-fx~="rules"] .bg-rules {
+  width: min(44rem, 100%);
+  inset: 0 auto 0 50%;
+  transform: translateX(-50%);
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 75%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 12%, black 75%, transparent);
+}
+
+@media (max-width: 48rem) {
+  :root[data-fx~="rules"] .bg-rules {
+    display: none;
+  }
+}
+
+/* micro: works entries get a whisper of tint on hover */
+:root[data-fx~="hover"] ul.works li {
+  padding-inline: 0.9rem;
+  margin-inline: -0.9rem;
+  transition: background-color 0.25s ease;
+}
+
+:root[data-fx~="hover"] ul.works li:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+/* hero + home sections */
+
+.hero h1 {
+  font-size: 2.6rem;
+  letter-spacing: -0.015em;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.2rem;
+}
+
+.lead {
+  font-size: 1.2rem;
+  color: var(--muted);
+  max-width: 32rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0 0.5rem;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1rem 1.15rem 0.9rem;
+  background: color-mix(in srgb, var(--line) 18%, var(--bg));
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--muted);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+}
+
+.card p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.more-link {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.more-link:hover {
+  color: var(--accent);
+}
+
+/* tabbed views — home and works live in one file, switched by url hash.
+   Without JS (no data-route on <html>) both sections stay visible. */
+
+html[data-route="home"] .view[data-view="works"],
+html[data-route="works"] .view[data-view="home"] {
+  display: none;
+}
+
+.view {
+  animation: view-in 0.3s ease both;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view {
+    animation: none;
+  }
+}
+
+/* footer */
+
+footer {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
