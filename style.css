@@ -37,7 +37,7 @@
   --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
 }
 
-/* dark theme — opt-in via the nav toggle (data-theme on <html>); light is the default */
+/* dark theme — via the nav toggle (data-theme on <html>); default follows the system preference */
 :root[data-theme="dark"] {
   --bg: #262622;
   --fg: #e3e0d7;
