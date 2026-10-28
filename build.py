@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-build.py — turns every works/*.md file into a blog-style HTML page
-and fills the two generated lists inside index.html (home teaser + works tab).
-index.html is a single tabbed file; there is no separate works.html.
+build.py — turns every works/*.md and blog/*.md file into an HTML page
+and fills the generated lists inside index.html (home teaser + works tab
++ blog tab). index.html is a single tabbed file; there is no separate
+works.html or blog.html.
 
 Usage:  python3 build.py   (run before pushing to GitHub Pages)
 
 Security notes:
-  * Only *.md files directly inside works/ are considered — no recursion,
+  * Only *.md files directly inside works/ or blog/ are considered — no recursion,
     no symlinks (iterdir + is_file check would follow symlinks, so we use
     Path.is_file() combined with a strict filename whitelist below).
   * Filenames must match a strict whitelist; anything else is skipped
@@ -17,6 +18,8 @@ Security notes:
   * Raw HTML inside your markdown body is passed through — that's fine
     because you author these files yourself; don't accept .md files
     from untrusted sources without review.
+  * Output paths are built from the sanitized slug inside the section
+    directory, so they can never escape works/ or blog/.
 """
 
 import html
@@ -26,9 +29,75 @@ from datetime import date
 from pathlib import Path
 
 import markdown
+from markdown.extensions import Extension
+from markdown.preprocessors import Preprocessor
 
 ROOT = Path(__file__).resolve().parent
-WORKS = ROOT / "works"
+SECTIONS = {name: ROOT / name for name in ("works", "blog")}
+
+# --- obsidian-style callouts -------------------------------------------------
+# Turns `> [!note] Title` blockquotes into python-markdown admonitions
+# (`!!!` static, `???`/`???+` foldable via the `-`/`+` suffix), so the
+# `admonition` + `pymdownx.details` extensions can render them.
+
+CALLOUT_RE = re.compile(r"^>\s*\[!([A-Za-z0-9_-]+)\]([-+]?)\s*(.*)$")
+QUOTE_RE = re.compile(r"^>\s?(.*)$")
+
+# obsidian aliases -> admonition stock types
+CALLOUT_ALIASES = {
+    "summary": "abstract",
+    "tldr": "abstract",
+    "hint": "tip",
+    "important": "tip",
+    "check": "success",
+    "done": "success",
+    "help": "question",
+    "faq": "question",
+    "caution": "warning",
+    "attention": "warning",
+    "fail": "failure",
+    "missing": "failure",
+    "error": "danger",
+    "cite": "quote",
+}
+
+
+class ObsidianCallouts(Preprocessor):
+    def run(self, lines: list[str]) -> list[str]:
+        out: list[str] = []
+        i = 0
+        while i < len(lines):
+            m = CALLOUT_RE.match(lines[i])
+            if not m:
+                out.append(lines[i])
+                i += 1
+                continue
+            kind = m.group(1).lower()
+            kind = CALLOUT_ALIASES.get(kind, kind)
+            fold = m.group(2)
+            title = m.group(3).strip().replace('"', "&quot;")
+            i += 1
+            # gather the rest of the blockquote
+            body: list[str] = []
+            while i < len(lines):
+                qm = QUOTE_RE.match(lines[i])
+                if not qm:
+                    break
+                body.append(qm.group(1))
+                i += 1
+            marker = {"": "!!!", "-": "???", "+": "???+"}[fold]
+            head = f"{marker} {kind}"
+            if title:
+                head += f' "{title}"'
+            out.append(head)
+            out.extend(f"    {ln}" if ln.strip() else "" for ln in body)
+            out.append("")  # blank line so the block terminates
+        return out
+
+
+class ObsidianCalloutExtension(Extension):
+    def extendMarkdown(self, md: markdown.Markdown) -> None:
+        md.preprocessors.register(ObsidianCallouts(md), "obsidian_callouts", 105)
 
 # --- safety: filename whitelist & slug rules -------------------------------
 
@@ -68,6 +137,16 @@ def parse_date(raw: str | None, fallback: date) -> date:
 
 # --- templates --------------------------------------------------------------
 
+# Post pages reuse the chrome (head assets, background layers, header/nav,
+# footer, controls script) from index.html itself: at build time we extract
+# the <!-- chrome:x --> … <!-- /chrome:x --> blocks and localize relative
+# URLs for pages one level deep (works/, blog/). Edit chrome in index.html
+# only — just keep the markers intact.
+
+CHROME_RE = re.compile(r"<!-- chrome:([a-z]+) -->(.*?)<!-- /chrome:\1 -->", re.DOTALL)
+CHROME_PARTS = ("head", "bg", "header", "footer", "controls")
+REL_ATTR_RE = re.compile(r"""\b(href|src)="(?!https?:|mailto:|tel:|#|/)([^"]+)\"""")
+
 PAGE = """<!doctype html>
 <html lang="en" data-fx="mesh vignette rules hover">
 <head>
@@ -75,83 +154,43 @@ PAGE = """<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{title} — Héctor</title>
   <meta name="description" content="{description}">
-  <link rel="stylesheet" href="{root}style.css">
-  <script>try{{var p=localStorage.getItem("palette");if(p)document.documentElement.setAttribute("data-palette",p);var t=localStorage.getItem("theme");document.documentElement.setAttribute("data-theme",t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))}}catch(e){{}}</script>
+{head}
 </head>
 <body>
-  <div class="bg bg-mesh" aria-hidden="true"></div>
-  <div class="bg bg-vignette" aria-hidden="true"></div>
-  <div class="bg bg-rules" aria-hidden="true"></div>
-  <div class="progress" aria-hidden="true"></div>
+{bg}
   <main>
-    <header>
-      <p class="site-title">HGE's own web corner</p>
-      <nav>
-        <a href="{root}index.html#/home">home</a>
-        <a href="{root}index.html#/works">works</a>
-        <span class="controls">
-          <span class="palette" role="group" aria-label="accent colour">
-            <button class="swatch sw-olive" data-palette="olive" title="olive" aria-label="olive accent"></button>
-            <button class="swatch sw-slate" data-palette="slate" title="slate" aria-label="slate accent"></button>
-            <button class="swatch sw-clay" data-palette="clay" title="clay" aria-label="clay accent"></button>
-            <button class="swatch sw-graphite" data-palette="graphite" title="graphite" aria-label="graphite accent"></button>
-          </span>
-          <button id="theme-toggle" class="theme-toggle" title="switch theme">◐ auto</button>
-        </span>
-      </nav>
-    </header>
+{header}
 
 {body}
   </main>
 
-  <footer>
-    Too busy studying to put trackers here
-  </footer>
-  <script>
-    (function () {{
-      var root = document.documentElement;
-      var buttons = document.querySelectorAll(".swatch");
-      function mark() {{
-        var current = root.getAttribute("data-palette") || "olive";
-        buttons.forEach(function (b) {{
-          b.setAttribute("aria-pressed", String(b.dataset.palette === current));
-        }});
-      }}
-      buttons.forEach(function (b) {{
-        b.addEventListener("click", function () {{
-          root.setAttribute("data-palette", b.dataset.palette);
-          try {{ localStorage.setItem("palette", b.dataset.palette); }} catch (e) {{}}
-          mark();
-        }});
-      }});
-      mark();
-
-      var toggle = document.getElementById("theme-toggle");
-      var mq = window.matchMedia("(prefers-color-scheme: dark)");
-      function mode() {{
-        try {{ return localStorage.getItem("theme") || "system"; }} catch (e) {{ return "system"; }}
-      }}
-      function paint() {{
-        var m = mode();
-        root.setAttribute("data-theme",
-          m === "system" ? (mq.matches ? "dark" : "light") : m);
-        toggle.textContent = m === "system" ? "◐ auto" : m === "dark" ? "☾ dark" : "☀ light";
-      }}
-      toggle.addEventListener("click", function () {{
-        var m = mode(), next = m === "system" ? "light" : m === "light" ? "dark" : "system";
-        try {{
-          if (next === "system") localStorage.removeItem("theme");
-          else localStorage.setItem("theme", next);
-        }} catch (e) {{}}
-        paint();
-      }});
-      mq.addEventListener("change", function () {{ if (mode() === "system") paint(); }});
-      paint();
-    }})();
-  </script>
+{footer}
+{controls}
 </body>
 </html>
 """
+
+
+def extract_chrome(index_text: str) -> dict[str, str]:
+    """Pull the shared chrome blocks out of index.html (single source of truth)."""
+    chrome = {
+        m.group(1): "\n".join(
+            line.rstrip() for line in m.group(2).splitlines()
+        ).strip("\n")
+        for m in CHROME_RE.finditer(index_text)
+    }
+    missing = [part for part in CHROME_PARTS if part not in chrome]
+    if missing:
+        sys.exit(f"error: chrome markers missing in index.html: {', '.join(missing)}")
+    return chrome
+
+
+def localize(fragment: str, root: str = "../") -> str:
+    """Rewrite a chrome fragment for a page inside works/ or blog/."""
+    frag = REL_ATTR_RE.sub(lambda m: f'{m.group(1)}="{root}{m.group(2)}"', fragment)
+    frag = frag.replace('href="#/', f'href="{root}index.html#/')  # tab links
+    frag = re.sub(r'\s+(aria-current="page"|data-route="[a-z]+")', "", frag)  # tab state is index-only
+    return frag
 
 ENTRY = """      <li>
         <a class="title" href="{href}">{title}</a>
@@ -164,28 +203,30 @@ POST_BODY = """    <article class="post">
         <p class="meta muted">{date}</p>
       </header>
 {content}
-      <a class="backlink" href="../index.html#/works">← back to works</a>
+      <a class="backlink" href="../index.html#{anchor}">← back to {section}</a>
     </article>
 """
 
 # --- build ------------------------------------------------------------------
 
 
-def collect_posts() -> list[dict]:
-    if not WORKS.is_dir():
-        sys.exit(f"error: {WORKS} does not exist")
+def collect_posts(directory: Path) -> list[dict]:
+    if not directory.is_dir():
+        directory.mkdir(parents=True)
+        print(f"created {directory.relative_to(ROOT)}/ (empty)")
+        return []
 
     posts = []
-    for path in sorted(WORKS.iterdir()):
+    for path in sorted(directory.iterdir()):
         if path.name.startswith("."):
             continue  # ignore dotfiles
         if not path.is_file() or path.is_symlink():
             continue  # never follow symlinks
         if path.suffix.lower() != ".md":
             continue  # generated html and other files live here too
-        if not FILENAME_OK.match(path.name):
-            print(f"warning: skipping {path.name!r} (filename not whitelisted)")
-            continue
+        # if not FILENAME_OK.match(path.name):
+        #     print(f"warning: skipping {path.name!r} (filename not whitelisted)")
+        #     continue
 
         try:
             raw = path.read_text(encoding="utf-8")
@@ -196,12 +237,11 @@ def collect_posts() -> list[dict]:
         meta, body = parse_frontmatter(raw)
         slug = slugify(path.stem)
         title = meta.get("title") or path.stem.replace("-", " ").replace("_", " ")
-        summary = meta.get("summary", "")
         posts.append(
             {
                 "slug": slug,
                 "title": title,
-                "summary": summary,
+                "summary": meta.get("summary", ""),
                 "date": parse_date(meta.get("date"), date.fromtimestamp(path.stat().st_mtime)),
                 "body_md": body.strip(),
                 "source": path.name,
@@ -212,10 +252,10 @@ def collect_posts() -> list[dict]:
     return posts
 
 
-def render_entries(posts: list[dict]) -> str:
+def render_entries(posts: list[dict], section: str) -> str:
     return "\n".join(
         ENTRY.format(
-            href=f"works/{p['slug']}.html",
+            href=f"{section}/{p['slug']}.html",
             title=html.escape(p["title"]),
             date=p["date"].isoformat(),
             summary=(
@@ -244,54 +284,81 @@ def replace_block(text: str, marker: str, entries: str) -> tuple[str, bool]:
     return new_text, bool(count)
 
 
-def inject_works(posts: list[dict]) -> None:
-    """Fill both generated lists in index.html: the home teaser (newest post)
-    and the works tab (every post)."""
+def inject_index(works_posts: list[dict], blog_posts: list[dict]) -> None:
+    """Fill the generated lists in index.html: the home teaser (newest work),
+    the works tab (every work) and the blog tab (every post)."""
     index = ROOT / "index.html"
     text = index.read_text(encoding="utf-8")
 
-    text, ok_latest = replace_block(text, "latest", render_entries(posts[:1]))
-    text, ok_all = replace_block(text, "works", render_entries(posts))
-
-    if not ok_latest:
-        print("warning: latest markers not found in index.html")
-    if not ok_all:
-        print("warning: works markers not found in index.html")
-    if ok_latest or ok_all:
+    lists = (
+        ("latest", works_posts[:1], "works"),
+        ("works", works_posts, "works"),
+        ("blog", blog_posts, "blog"),
+    )
+    changed = False
+    for marker, posts, section in lists:
+        text, ok = replace_block(text, marker, render_entries(posts, section))
+        changed |= ok
+        if not ok:
+            print(f"warning: {marker} markers not found in index.html")
+    if changed:
         index.write_text(text, encoding="utf-8")
-        print(f"updated index.html (latest: {min(1, len(posts))}, works tab: {len(posts)} posts)")
+        print(
+            f"updated index.html (latest: {min(1, len(works_posts))}, "
+            f"works tab: {len(works_posts)}, blog tab: {len(blog_posts)} posts)"
+        )
 
 
 def build() -> None:
-    md = markdown.Markdown(extensions=["fenced_code", "tables", "smarty"])
-    posts = collect_posts()
+    md = markdown.Markdown(
+        extensions=[
+            "fenced_code",
+            "tables",
+            "smarty",
+            "pymdownx.tilde",  # ~~strikethrough~~
+            "admonition",
+            "pymdownx.details",  # foldable callouts
+            ObsidianCalloutExtension(),  # > [!note] syntax
+        ]
+    )
+    all_posts = {section: collect_posts(directory) for section, directory in SECTIONS.items()}
 
-    # individual post pages -> works/<slug>.html
-    for post in posts:
-        md.reset()
-        content = md.convert(post["body_md"])
-        body = POST_BODY.format(
-            title=html.escape(post["title"]),
-            date=post["date"].isoformat(),
-            content=content,
-        )
-        page = PAGE.format(
-            title=html.escape(post["title"]),
-            description=html.escape(post["summary"] or post["title"]),
-            root="../",
-            body=body,
-        )
-        out = WORKS / f"{post['slug']}.html"
-        out.write_text(page, encoding="utf-8")
-        print(f"built {out.relative_to(ROOT)}  (from {post['source']})")
+    # shared chrome comes from index.html — the single source of truth
+    chrome = {
+        part: localize(fragment)
+        for part, fragment in extract_chrome((ROOT / "index.html").read_text(encoding="utf-8")).items()
+    }
 
-    # both lists -> index.html (home teaser + works tab)
-    inject_works(posts)
+    # individual post pages -> <section>/<slug>.html
+    for section, posts in all_posts.items():
+        for post in posts:
+            md.reset()
+            content = md.convert(post["body_md"])
+            body = POST_BODY.format(
+                title=html.escape(post["title"]),
+                date=post["date"].isoformat(),
+                content=content,
+                anchor=f"/{section}",
+                section=section,
+            )
+            page = PAGE.format(
+                title=html.escape(post["title"]),
+                description=html.escape(post["summary"] or post["title"]),
+                body=body,
+                **chrome,
+            )
+            out = SECTIONS[section] / f"{post['slug']}.html"
+            out.write_text(page, encoding="utf-8")
+            print(f"built {out.relative_to(ROOT)}  (from {post['source']})")
 
-    stale = ROOT / "works.html"
-    if stale.exists():
-        stale.unlink()
-        print("removed works.html  (merged into index.html)")
+    # generated lists -> index.html (home teaser + works tab + blog tab)
+    inject_index(all_posts["works"], all_posts["blog"])
+
+    for stale_name in ("works.html", "blog.html"):
+        stale = ROOT / stale_name
+        if stale.exists():
+            stale.unlink()
+            print(f"removed {stale_name}  (merged into index.html)")
 
 
 if __name__ == "__main__":

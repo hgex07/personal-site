@@ -5,21 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Héctor — home</title>
   <meta name="description" content="Personal page of Héctor, biochemistry student.">
+  <!-- chrome:head -->
   <link rel="stylesheet" href="style.css">
   <script>try{var p=localStorage.getItem("palette");if(p)document.documentElement.setAttribute("data-palette",p);var t=localStorage.getItem("theme");document.documentElement.setAttribute("data-theme",t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"))}catch(e){}</script>
-  <script>document.documentElement.setAttribute("data-route",/^#\/?works/.test(location.hash)?"works":"home")</script>
+  <!-- /chrome:head -->
+  <script>var m=/^#\/?(works|blog)/.exec(location.hash);document.documentElement.setAttribute("data-route",m?m[1]:"home")</script>
 </head>
 <body>
+  <!-- chrome:bg -->
   <div class="bg bg-mesh" aria-hidden="true"></div>
   <div class="bg bg-vignette" aria-hidden="true"></div>
   <div class="bg bg-rules" aria-hidden="true"></div>
   <div class="progress" aria-hidden="true"></div>
+  <!-- /chrome:bg -->
   <main>
+    <!-- chrome:header -->
     <header>
       <p class="site-title">HGE's own web corner</p>
       <nav>
         <a href="#/home" data-route="home" aria-current="page">home</a>
         <a href="#/works" data-route="works">works</a>
+        <a href="#/blog" data-route="blog">blog</a>
         <span class="controls">
           <span class="palette" role="group" aria-label="accent colour">
             <button class="swatch sw-olive" data-palette="olive" title="olive" aria-label="olive accent"></button>
@@ -31,6 +37,7 @@
         </span>
       </nav>
     </header>
+    <!-- /chrome:header -->
 
     <section class="view" data-view="home">
     <section class="hero">
@@ -64,11 +71,7 @@
     <h2>Latest work</h2>
     <!-- latest:start -->
     <ul class="works">
-      <li>
-        <a class="title" href="works/melanophores-aggregation.html">Experimenting with melanophore agreggation and dispersion</a>
-        <span class="meta">2025-09-14</span>
-        <p class="summary">More to come.</p>
-      </li>
+      <li><span class="meta">nothing here yet</span></li>
     </ul>
     <!-- latest:end -->
     <p><a class="more-link" href="#/works">all works →</a></p>
@@ -85,28 +88,38 @@
 
     <!-- works:start -->
     <ul class="works">
-      <li>
-        <a class="title" href="works/melanophores-aggregation.html">Experimenting with melanophore agreggation and dispersion</a>
-        <span class="meta">2025-09-14</span>
-        <p class="summary">More to come.</p>
-      </li>
+      <li><span class="meta">nothing here yet</span></li>
     </ul>
     <!-- works:end -->
     </section>
+
+    <section class="view" data-view="blog">
+    <h1>Blog</h1>
+    <p class="muted">Short thoughts and rants, mostly personal and political. Newest first.</p>
+
+    <!-- blog:start -->
+    <ul class="works">
+      <li><span class="meta">nothing here yet</span></li>
+    </ul>
+    <!-- blog:end -->
+    </section>
   </main>
 
+  <!-- chrome:footer -->
   <footer>
     Too busy studying to put trackers here
   </footer>
+  <!-- /chrome:footer -->
   <script>
-    /* hash routing: home and works are separate views inside this one file */
+    /* hash routing: home, works and blog are separate views inside this one file */
     (function () {
       var root = document.documentElement;
       var views = document.querySelectorAll(".view[data-view]");
       var links = document.querySelectorAll("nav a[data-route]");
-      var titles = { home: "Héctor — home", works: "works — HGE" };
+      var titles = { home: "Héctor — home", works: "works — HGE", blog: "blog — HGE" };
       function route() {
-        var name = /^#\/?works/.test(location.hash) ? "works" : "home";
+        var m = /^#\/?(works|blog)/.exec(location.hash);
+        var name = m ? m[1] : "home";
         root.setAttribute("data-route", name);
         views.forEach(function (v) { v.hidden = v.dataset.view !== name; });
         links.forEach(function (a) {
@@ -119,6 +132,7 @@
       route();
     })();
   </script>
+  <!-- chrome:controls -->
   <script>
     (function () {
       var root = document.documentElement;
@@ -161,5 +175,6 @@
       paint();
     })();
   </script>
+  <!-- /chrome:controls -->
 </body>
 </html>

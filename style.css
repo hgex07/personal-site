@@ -49,29 +49,13 @@
 
 /* --- accent palettes (chosen via the swatches, stored in localStorage) --- */
 
-:root[data-palette="slate"] {
-  --accent: #4c5f72;
-}
+:root[data-palette="slate"] { --accent: #4c5f72; }
+:root[data-palette="clay"] { --accent: #8a5a44; }
+:root[data-palette="graphite"] { --accent: #565652; }
 
-:root[data-palette="clay"] {
-  --accent: #8a5a44;
-}
-
-:root[data-palette="graphite"] {
-  --accent: #565652;
-}
-
-:root[data-theme="dark"][data-palette="slate"] {
-  --accent: #9db0c4;
-}
-
-:root[data-theme="dark"][data-palette="clay"] {
-  --accent: #c69a80;
-}
-
-:root[data-theme="dark"][data-palette="graphite"] {
-  --accent: #b3b3ad;
-}
+:root[data-theme="dark"][data-palette="slate"] { --accent: #9db0c4; }
+:root[data-theme="dark"][data-palette="clay"] { --accent: #c69a80; }
+:root[data-theme="dark"][data-palette="graphite"] { --accent: #b3b3ad; }
 
 /* page-to-page cross-fade (supported browsers; no-op elsewhere) */
 @view-transition {
@@ -221,11 +205,6 @@ nav a[aria-current="page"] {
   border-color: var(--muted);
 }
 
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 .swatch {
   width: 0.72rem;
   height: 0.72rem;
@@ -246,6 +225,7 @@ nav a[aria-current="page"] {
   transform: scale(1.2);
 }
 
+.theme-toggle:focus-visible,
 .swatch:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -393,6 +373,42 @@ article.post .meta {
 
 .backlink:hover {
   color: var(--accent);
+}
+
+/* callouts — obsidian-style `> [!note]` blocks rendered as admonitions/details.
+   foldables come out as <details class="type"> (no .admonition class), static
+   ones as <div class="admonition type"> — style both the same. */
+
+article.post .admonition,
+article.post details[class] {
+  margin: 1.6rem 0;
+  padding: 0.2rem 1.1rem 0.4rem;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+article.post .admonition-title,
+article.post details[class] > summary {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--accent);
+  margin: 0.8rem 0 0.3rem;
+}
+
+article.post details[class] > summary {
+  cursor: pointer;
+}
+
+article.post details[class] > summary:hover {
+  color: var(--fg);
+}
+
+article.post .admonition > :last-child,
+article.post details[class] > :last-child {
+  margin-bottom: 0.8rem;
 }
 
 /* scroll reveals — css view-driven, static where unsupported */
@@ -566,11 +582,12 @@ article.post .meta {
   color: var(--accent);
 }
 
-/* tabbed views — home and works live in one file, switched by url hash.
-   Without JS (no data-route on <html>) both sections stay visible. */
+/* tabbed views — home, works and blog live in one file, switched by url hash.
+   Without JS (no data-route on <html>) all sections stay visible. */
 
-html[data-route="home"] .view[data-view="works"],
-html[data-route="works"] .view[data-view="home"] {
+html[data-route="home"] .view:not([data-view="home"]),
+html[data-route="works"] .view:not([data-view="works"]),
+html[data-route="blog"] .view:not([data-view="blog"]) {
   display: none;
 }
 
@@ -586,12 +603,6 @@ html[data-route="works"] .view[data-view="home"] {
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .view {
-    animation: none;
   }
 }
 
